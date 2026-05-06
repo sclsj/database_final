@@ -1,0 +1,912 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+"""The `Boolean` scalar type represents `true` or `false`."""
+scalar Boolean
+
+"""A datetime string with format `Y-m-d H:i:s`, e.g. `2019-07-27T22:00:00+00:0`."""
+scalar CustomDateTime
+
+"""A datetime string with format 'Y-m-d H:i:s', e.g. '2018-01-01 13:00:00'."""
+scalar DateTime
+
+"""The `Float` scalar type represents signed double-precision fractional
+values as specified by
+[IEEE 754](http://en.wikipedia.org/wiki/IEEE_floating_point). """
+scalar Float
+
+"""The `ID` scalar type represents a unique identifier, often used to
+refetch an object or as key for a cache. The ID type appears in a JSON
+response as a String; however, it is not intended to be human-readable.
+When expected as an input type, any string (such as `"4"`) or integer
+(such as `4`) input value will be accepted as an ID."""
+scalar ID
+
+"""The `Int` scalar type represents non-fractional signed whole numeric
+values. Int can represent values between -(2^31) and 2^31 - 1. """
+scalar Int
+
+"""Loose type that allows any value. Be careful when passing in large `Int` or `Float` literals,
+as they may not be parsed correctly on the server side. Use `String` literals if you are
+dealing with really large numbers to be on the safe side."""
+scalar Mixed
+
+"""The `String` scalar type represents textual data, represented as UTF-8
+character sequences. The String type is most often used by GraphQL to
+represent free-form human-readable text."""
+scalar String
+
+enum Operator {
+  EQ
+  NEQ
+  GT
+  GTE
+  LT
+  LTE
+  LIKE
+  NOT_LIKE
+}
+
+enum ProductType {
+  srr
+  ier
+  egm
+}
+
+enum Provider {
+  FACEBOOK
+}
+
+enum SavedSearchType {
+  saved
+  recent
+}
+
+enum SearchType {
+  keyword
+  advanced_search
+}
+
+enum SortBy {
+  relevance
+  popular
+  recent
+}
+
+enum SortOrder {
+  ASC
+  DESC
+}
+
+input AdvancedSearchInput {
+  from: Int!
+  size: Int!
+  sort_by: SortBy
+  initial_operator: String
+  filters: FilterSelected
+  query: String
+}
+
+input DownloadSearchResultInput {
+  export_type: SearchType!
+  keyword: String
+  initial_operator: String
+  sort_by: SortBy
+  filters: FilterSelected
+  query: String
+  size: Int!
+}
+
+input EnableDisableNotificationInput {
+  id: ID!
+  alert: Boolean!
+}
+
+input ExportSearchResultInput {
+  export_type: SearchType!
+  keyword: String
+  initial_operator: String
+  sort_by: SortBy
+  filters: FilterSelected
+  query: String
+  size: Int!
+}
+
+input FilterSelected {
+  sector_name: [String]
+  continents: [String]
+  product_type: [ProductType]
+  threeie_funded: [String]
+  threeie_produced: [String]
+  countries: [String]
+  primary_theme: [String]
+  equity_focus: [String]
+  year_of_publication: [Int]
+  equity_dimension: [String]
+  evidence_programme: [String]
+  fcv_status: [String]
+  dataset_available: [String]
+  primary_dac_codes: [String]
+  un_sdg: [String]
+  primary_dataset_availability: [String]
+  pre_registration: [String]
+  interventions: [String]
+  outcome: [String]
+  evaluation_method: [String]
+  confidence_level: [String]
+}
+
+input ForgotPasswordInput {
+  email: String!
+}
+
+input KeywordSearchInput {
+  keyword: String
+  from: Int!
+  size: Int!
+  sort_by: SortBy
+  filters: FilterSelected
+}
+
+input LoginInput {
+  username: String!
+  password: String!
+  captchaToken: String!
+}
+
+input NewPasswordWithCodeInput {
+  email: String!
+  token: String!
+  password: String!
+  password_confirmation: String!
+}
+
+input OrderByClause {
+  field: String!
+  order: SortOrder!
+}
+
+input QueryFilter {
+  userQuery: String
+  initialFilter: initialFilterSet
+  optionalFilters: [optionalFiltersSet]
+}
+
+input RefreshTokenInput {
+  refresh_token: String
+}
+
+input SignUpInput {
+  email: String!
+  first_name: String!
+  last_name: String!
+  password: String!
+}
+
+input SocialLoginInput {
+  provider: Provider!
+  access_token: String!
+}
+
+input UpdatePasswordInput {
+  old_password: String
+  password: String
+}
+
+input UpdateUserDetailInput {
+  first_name: String!
+  last_name: String!
+  email: String!
+}
+
+input WhereConstraints {
+  column: String
+  operator: Operator = EQ
+  value: Mixed
+  AND: [WhereConstraints!]
+  OR: [WhereConstraints!]
+  NOT: [WhereConstraints!]
+}
+
+input initialFilterSet {
+  type: String
+  value: String
+}
+
+input optionalFiltersSet {
+  logicOperator: String
+  type: String
+  value: String
+}
+
+type AboutPage {
+  id: String
+  evidence_hub_title: String
+  about_sub_heading: String
+  evidence_hub_content: String
+  about_banner_image: String
+  slides: [Slide]
+  tabs: [Tab]
+}
+
+type AdvancedSearchHelpContent {
+  id: ID
+  advanced_search_help_title: String
+  advanced_search_help_content: String
+}
+
+type AdvancedSearchResponse {
+  search_result: [SearchResultResponse]
+  total_count: Int
+  filters: FilterCount
+  selectedFilters: selectedFiltersSet
+}
+
+type AggregateInfo {
+  key: String
+  doc_count: Int
+}
+
+type AlternativeSuggestions {
+  text: String
+}
+
+type AuthPayload {
+  access_token: String!
+  refresh_token: String!
+  expires_in: Int!
+  token_type: String!
+  user: User!
+}
+
+type AuthorsSet {
+  author: String
+  institutions: [InstitutionsSet]
+}
+
+type BookmarkDetails {
+  id: ID
+  record_id: ID
+  title: String
+  type: String
+  author: String
+  year_of_publication: Int
+  sector_name: String
+  journal: String
+}
+
+type BookmarkRecord {
+  id: ID!
+  createdBy: User!
+  records: Record!
+  created_at: DateTime
+  updated_at: DateTime
+}
+
+type BookmarkRecordData {
+  data: [RecordDetail]
+  total: Int
+}
+
+type BookmarkedRecordIDs {
+  id: [ID]
+}
+
+type CommonFilterCount {
+  buckets: [AggregateInfo]
+}
+
+type ContinentsSet {
+  continent: String
+  countries: [CountriesSet]
+}
+
+type CountriesSet {
+  country: String
+  income_level: String
+  fcv_status: String
+}
+
+type DecisionTree {
+  id: String
+  decision_tree_title: String
+  decision_tree_content: String
+}
+
+type DeleteAccountResponse {
+  status: String!
+  message: String!
+}
+
+type DeleteBookmarkResponse {
+  status: String!
+  message: String!
+}
+
+type DeleteSavedSearchResponse {
+  status: String!
+  message: String!
+}
+
+type Export {
+  url: String
+}
+
+type FilterCount {
+  sector_wise_count: SectorDetailCount
+  continents_wise_count: CommonFilterCount
+  product_type_wise_count: ProductDetailCount
+  threeie_produced_wise_count: CommonFilterCount
+  threeie_funded_wise_count: CommonFilterCount
+  countries_wise_count: CommonFilterCount
+  equity_focus_wise_count: CommonFilterCount
+  equity_dimension_wise_count: CommonFilterCount
+  year_of_publication_wise_count: CommonFilterCount
+  themes_wise_count: ThemesDetailCount
+  keywords_wise_count: CommonFilterCount
+  evidence_programme_wise_count: CommonFilterCount
+  fcv_wise_count: CommonFilterCount
+  dataset_available_wise_count: CommonFilterCount
+  primary_dac_codes_wise_count: CommonFilterCount
+  un_sdg_wise_count: CommonFilterCount
+  primary_dataset_availability_wise_count: CommonFilterCount
+  pre_registration_wise_count: CommonFilterCount
+  interventions_wise_count: CommonFilterCount
+  outcome_wise_count: CommonFilterCount
+  evm_wise_count: CommonFilterCount
+  confidence_level_wise_count: CommonFilterCount
+}
+
+type ForgotPasswordResponse {
+  status: String!
+  message: String
+  tokens: RefreshTokenPayload
+  user: User
+}
+
+type FundedBy {
+  threeie_funding: Int
+  other_funding_sources: Int
+}
+
+type FundedByList {
+  funded_by_list: [FundedByResponse]
+}
+
+type FundedByResponse {
+  id: Int
+  value: String
+}
+
+type FundingAgenciesSet {
+  program_funding_agency: String
+  agency_name: String
+}
+
+type ImplementationAgenciesSet {
+  implementation_agency: String
+  implement_agency: String
+}
+
+type InstitutionsSet {
+  author_affiliation: String
+  department: [String]
+  author_country: String
+}
+
+type KeyWordSearchResponse {
+  search_result: [SearchResultResponse]
+  total_count: Int
+  filters: FilterCount
+  selectedFilters: selectedFiltersSet
+  alternative_suggestions: [AlternativeSuggestions]
+}
+
+type LogoutResponse {
+  status: String!
+  message: String
+}
+
+type Mutation {
+  updateUserDetails(data: UpdateUserDetailInput!): UpdateUserDetailsResponse
+  signUp(data: SignUpInput!): SignUpResult!
+  socialLogin(data: SocialLoginInput!): AuthPayload!
+  deleteAccount: DeleteAccountResponse
+  createSaveSearch(searched_text: String, searched_result_count: Int!, type: SavedSearchType, search_type: SearchType, alert: Boolean, url: String!): SavedSearch
+  savedSearchdDelete(id: [ID]!): DeleteSavedSearchResponse
+  updateSavedSearch(id: ID!, searched_text: String, type: SearchType, url: String!): SavedSearch
+  enableDisableSavedSearchNotification(data: EnableDisableNotificationInput!): UpdatedSearchNotificationResult
+  createBookmarkRecord(record_id: ID!): BookmarkRecord
+  deleteBookmarkRecord(id: [ID]): DeleteBookmarkResponse
+  savedSearchedKeyword(keyword: String): SavedSearchResult
+  updateRecordPageView(id: ID!): Record
+  bookmarkedRecords: BookmarkedRecordIDs
+  SavedSearches(type: SavedSearchType!, count: Int!, page: Int): SavedSearchPaginator
+  login(data: LoginInput): AuthPayload!
+  refreshToken(data: RefreshTokenInput): RefreshTokenPayload!
+  logout: LogoutResponse!
+  forgotPassword(data: ForgotPasswordInput!): ForgotPasswordResponse!
+  updateForgottenPassword(data: NewPasswordWithCodeInput): ForgotPasswordResponse!
+  updatePassword(data: UpdatePasswordInput!): UpdatePasswordResult!
+}
+
+type PageInfo {
+  """When paginating forwards, are there more items?"""
+  hasNextPage: Boolean!
+  """When paginating backwards, are there more items?"""
+  hasPreviousPage: Boolean!
+  """When paginating backwards, the cursor to continue."""
+  startCursor: String
+  """When paginating forwards, the cursor to continue."""
+  endCursor: String
+  """Total number of node in connection."""
+  total: Int
+  """Count of nodes in current request."""
+  count: Int
+  """Current page of request."""
+  currentPage: Int
+  """Last page in connection."""
+  lastPage: Int
+}
+
+type PaginatorInfo {
+  """Total count of available items in the page."""
+  count: Int!
+  """Current pagination page."""
+  currentPage: Int!
+  """Index of first item in the current page."""
+  firstItem: Int
+  """If collection has more pages."""
+  hasMorePages: Boolean!
+  """Index of last item in the current page."""
+  lastItem: Int
+  """Last page number of the collection."""
+  lastPage: Int!
+  """Number of items per page in the collection."""
+  perPage: Int!
+  """Total items available in the collection."""
+  total: Int!
+}
+
+type Permission {
+  id: ID!
+  name: String!
+}
+
+type ProductAggregateInfo {
+  key: String
+  doc_count: Int
+  by_secondary_product: CommonFilterCount
+}
+
+type ProductDetailCount {
+  buckets: [ProductAggregateInfo]
+}
+
+type Query {
+  roles: [Role!]!
+  users(count: Int!, page: Int): UserPaginator
+  user(id: Int!): User
+  me: User!
+  aboutPage: AboutPage
+  support: Support
+  decisiontree: DecisionTree
+  advancedSearchHelpContent: AdvancedSearchHelpContent
+  recordList(name: String): RecordList
+  advancedSearch(filter: WhereConstraints, data: AdvancedSearchInput!): AdvancedSearchResponse
+  bookmarkRecords(from: Int!, size: Int!): BookmarkRecordData
+  record(id: Int!): Record
+  keywordSearch(data: KeywordSearchInput!): KeyWordSearchResponse
+  Newest: [SearchResultResponse]
+  Export(data: ExportSearchResultInput!): Export
+  Download(id: [ID]!, sort_by: String, export_type: String): Export
+  RisDownload(data: DownloadSearchResultInput!): Export
+  DownloadRecord(id: Int!): Export
+  popularSearches(size: Int!): CommonFilterCount
+  recordDetail(id: Int!): RecordDetail
+  recordCount: RecordTypeCount
+  fundedByList(name: String): FundedByList
+  whatsNews: [WhatsNew]
+}
+
+type Record {
+  id: ID!
+  page_view: Int
+  createdBy: User
+  assignedTo: User
+  type: String
+  threeie_funded: Boolean
+  threeie_produced: Boolean
+  status: String!
+  archived_at: DateTime
+  created_at: DateTime
+  published_at: DateTime
+  attributes: String
+}
+
+type RecordDetail {
+  product_type: String
+  title: String
+  synopsis: String
+  id: ID
+  page_view: Int
+  short_title: String
+  language: [String]
+  sector_name: String
+  journal: String
+  journal_volume: String
+  journal_issue: String
+  year_of_publication: String
+  publication_type: String
+  pages: String
+  evaluation_design: String
+  authors: [AuthorsSet]
+  continent: [ContinentsSet]
+  project_name: [projectNameSet]
+  publisher_location: String
+  publication_url: String
+  egm_url: String
+  report_url: String
+  provide_an_overall_of_the_assessment_use_consistent_style_and_wording: String
+  status: String
+  created_at: DateTime
+  updated_at: DateTime
+  assigned_to: User
+  created_by: User
+  threeie_funded: String
+  threeie_produced: String
+  is_bookmark: String
+  based_on_the_above_assessments_of_the_methods_how_would_you_rate_the_reliability_of_the_review: String
+  abstract: String
+  open_access: String
+  doi: String
+  equity_focus: [String]
+  equity_dimension: [String]
+  equity_description: String
+  keywords: [String]
+  evaluation_method: String
+  additional_method: String
+  additional_method_2: String
+  mixed_methods: String
+  unit_of_observation: [String]
+  methodology: String
+  main_findings: String
+  background: String
+  objectives: String
+  region: [String]
+  stateprovince_name: [String]
+  district_name: [String]
+  citytown_name: [String]
+  location_name: [String]
+  additional_url: [Urls]
+  grantholding_institution: String
+  context: String
+  research_questions: String
+  main_finding: String
+  policy_examples: String
+  headline_findings: String
+  evidence_findings: String
+  policy_findings: String
+  research_findings: String
+  review_type: String
+  quantitative_method: String
+  qualitative_method: String
+  overall_of_studies: String
+  overall_of_high_quality_studies: String
+  overall_of_medium_quality_studies: String
+  relatedArticles: [RelatedArticles]
+  research_funding_agency: [ResearchFundingAgenciesSet]
+  study_status: String
+  sub_sector: [String]
+  themes: [ThemesSet]
+  detail_page_url: String
+  methodology_summary: String
+  other_resources: String
+  impact_evaluations: String
+  systematic_reviews: String
+  dataset_available: String
+  dataset_url: String
+  evidence_programme: String
+  instances_of_evidence_use: String
+  primary_dac_code: String
+  secondary_dac_code: String
+  crs_voluntary_dac_code: String
+  un_sustainable_development_goal: [String]
+  primary_dataset_url: String
+  pre_registration_url: String
+  primary_dataset_availability: String
+  primary_dataset_format: [String]
+  secondary_dataset_name: String
+  secondary_dataset_disclosure: String
+  additional_dataset_info: String
+  analysis_code_availability: String
+  analysis_code_format: [String]
+  study_materials_availability: [String]
+  study_materials_list: [String]
+  pre_registration: String
+  protocol_pre_analysis_plan: String
+  ethics_approval: String
+  interventions: [String]
+  outcome: [String]
+}
+
+type RecordList {
+  id: ID
+  name: String
+  values: [RecordListValue]
+}
+
+type RecordListValue {
+  id: ID
+  list_id: ID
+  value: String
+}
+
+type RecordTypeCount {
+  srr: Int
+  ier: Int
+  egm: Int
+}
+
+type RefreshTokenPayload {
+  access_token: String!
+  refresh_token: String!
+  expires_in: Int!
+  token_type: String!
+}
+
+type RelatedArticles {
+  product_type: String
+  product_id: ID
+  title: String
+}
+
+type ResearchFundingAgenciesSet {
+  research_funding_agency: String
+  agency_name: String
+}
+
+type Role {
+  id: ID!
+  name: String!
+  permissions: [Permission]
+}
+
+type SavedSearch {
+  id: ID!
+  createdBy: User!
+  searched_text: String
+  searched_result_count: Int!
+  alert: Boolean!
+  type: SavedSearchType!
+  search_type: SearchType
+  url: String
+  created_at: DateTime
+  updated_at: DateTime
+  deleted_at: DateTime
+}
+
+type SavedSearchPaginator {
+  paginatorInfo: PaginatorInfo!
+  data: [SavedSearch!]!
+}
+
+type SavedSearchResult {
+  status: String
+}
+
+type SearchResultResponse {
+  product_type: String
+  title: String
+  synopsis: String
+  id: ID
+  page_view: Int
+  short_title: String
+  language: [String]
+  sector_name: String
+  journal: String
+  journal_volume: String
+  journal_issue: String
+  year_of_publication: String
+  pages: String
+  evaluation_design: String
+  authors: [AuthorsSet]
+  continent: [ContinentsSet]
+  project_name: [projectNameSet]
+  publisher_location: String
+  status: String
+  created_at: CustomDateTime
+  updated_at: CustomDateTime
+  publication_type: String
+  publication_url: String
+  provide_an_overall_of_the_assessment_use_consistent_style_and_wording: String
+  assigned_to: User
+  created_by: User
+  threeie_funded: String
+  threeie_produced: String
+  is_bookmark: String
+  based_on_the_above_assessments_of_the_methods_how_would_you_rate_the_reliability_of_the_review: String
+  abstract: String
+  open_access: String
+  doi: String
+  equity_focus: [String]
+  equity_dimension: [String]
+  equity_description: String
+  keywords: [String]
+  evaluation_method: String
+  mixed_methods: String
+  unit_of_observation: [String]
+  methodology: String
+  main_findings: String
+  background: String
+  objectives: String
+  region: [String]
+  stateprovince_name: [String]
+  district_name: [String]
+  citytown_name: [String]
+  location_name: [String]
+  additional_url: [Urls]
+  grantholding_institution: String
+  context: String
+  research_questions: String
+  main_finding: String
+  policy_examples: String
+  headline_findings: String
+  review_type: String
+  quantitative_method: String
+  qualitative_method: String
+  overall_of_studies: String
+  overall_of_high_quality_studies: String
+  overall_of_medium_quality_studies: String
+  research_funding_agency: [ResearchFundingAgenciesSet]
+  study_status: String
+  sub_sector: [String]
+  themes: [ThemesSet]
+  detail_page_url: String
+  methodology_summary: String
+  other_resources: String
+  impact_evaluations: String
+  systematic_reviews: String
+  dataset_available: String
+  dataset_url: String
+  evidence_programme: String
+  instances_of_evidence_use: String
+}
+
+type SectorAggregateInfo {
+  key: String
+  doc_count: Int
+  by_secondary_sector: CommonFilterCount
+}
+
+type SectorDetailCount {
+  buckets: [SectorAggregateInfo]
+}
+
+type SignUpResult {
+  status: String!
+  message: String!
+  tokens: RefreshTokenPayload!
+  user: User!
+}
+
+type Slide {
+  id: String
+  slide_title: String
+  slide_content: String
+  slide_image: String
+}
+
+type Support {
+  id: String
+  support_title: String
+  support_content: String
+}
+
+type Tab {
+  id: String
+  tab_title: String
+  tab_sub_heading: String
+  tab_content: String
+  tab_image: String
+  order: Int
+}
+
+type ThemesAggregateInfo {
+  key: String
+  doc_count: Int
+  by_secondary_theme: CommonFilterCount
+}
+
+type ThemesDetailCount {
+  by_primary_theme: ThemesFilterCount
+}
+
+type ThemesFilterCount {
+  buckets: [ThemesAggregateInfo]
+}
+
+type ThemesSet {
+  primary_theme: String
+  sub_primary_theme: String
+  theme_type: String
+}
+
+type UpdatePasswordResult {
+  status: String!
+  message: String
+}
+
+type UpdateUserDetailsResponse {
+  message: String!
+  user: User!
+}
+
+type UpdatedSearchNotificationResult {
+  message: String!
+  data: SavedSearch!
+}
+
+type Urls {
+  additional_url: String
+  additional_url_address: String
+}
+
+type User {
+  id: ID!
+  first_name: String!
+  last_name: String!
+  email: String!
+  roles: [Role]
+  permissions: [Permission]
+}
+
+type UserPaginator {
+  paginatorInfo: PaginatorInfo!
+  data: [User!]!
+}
+
+type WhatsNew {
+  id: String
+  whats_new_title: String
+  whats_new_content: String
+  whats_new_date: String
+  animation_status: String!
+}
+
+type projectNameSet {
+  project_name: String
+  implementation_agencies: [ImplementationAgenciesSet]
+  funding_agencies: [FundingAgenciesSet]
+  research_funding_agencies: [ResearchFundingAgenciesSet]
+}
+
+type selectedFiltersSet {
+  sector_name: [String]
+  continents: [String]
+  product_type: [ProductType]
+  threeie_funded: [String]
+  threeie_produced: [String]
+  countries: [String]
+  primary_theme: [String]
+  equity_focus: [String]
+  year_of_publication: [Int]
+  equity_dimension: [String]
+  fcv_status: [String]
+  dataset_available: [String]
+  primary_dac_codes: [String]
+  un_sdg: [String]
+  primary_dataset_availability: [String]
+  pre_registration: [String]
+  interventions: [String]
+  outcome: [String]
+  evaluation_method: [String]
+  confidence_level: [String]
+}
+
+type verifyPasswordResult {
+  status: String!
+  message: String!
+}

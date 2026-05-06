@@ -1,0 +1,38 @@
+CREATE DATABASE IF NOT EXISTS final_project;
+USE final_project;
+
+DROP TABLE IF EXISTS countries;
+DROP TABLE IF EXISTS continents;
+DROP TABLE IF EXISTS authors;
+DROP TABLE IF EXISTS papers;
+
+CREATE TABLE papers (
+  paper_id INT PRIMARY KEY,
+  product_type VARCHAR(16),
+  title TEXT,
+  year_of_publication INT,
+  sector_name VARCHAR(128),
+  abstract TEXT,
+  evaluation_design VARCHAR(64),
+  evaluation_method VARCHAR(128)
+);
+
+CREATE TABLE authors (
+  paper_id INT,
+  author_position INT,
+  author_name VARCHAR(255),
+  PRIMARY KEY (paper_id, author_position)
+);
+
+CREATE TABLE continents (
+  paper_id INT,
+  continent_name VARCHAR(128),
+  PRIMARY KEY (paper_id, continent_name)
+);
+
+CREATE TABLE countries (
+  paper_id INT,
+  country_name VARCHAR(128),
+  continent_name VARCHAR(128),
+  PRIMARY KEY (paper_id, country_name)
+);
