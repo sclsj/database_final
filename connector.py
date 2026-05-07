@@ -23,22 +23,6 @@ def normalize_meaningful_text(value):
     return cleaned
 
 
-def first_meaningful_affiliation(author_entry):
-    for institution in author_entry.get("institutions") or []:
-        affiliation = normalize_meaningful_text(
-            institution.get("author_affiliation")
-        )
-        return affiliation
-
-
-def first_author_country(author_entry):
-    for institution in author_entry.get("institutions") or []:
-        author_country = normalize_meaningful_text(
-            institution.get("author_country")
-        )
-        return author_country
-
-
 with open("data_output.json") as f:
     all_data = json.load(f)
 
@@ -63,7 +47,7 @@ connection = mysql.connector.connect(
 cursor = connection.cursor()
 
 agency_cache = {}
-author_cache = {}
+institution_cache = {}
 continent_cache = {}
 country_cache = {}
 language_cache = {}
@@ -93,28 +77,28 @@ def get_or_create_agency(agency_name):
     return agency_id
 
 
-def get_or_create_author(author_name, agency_id, author_country):
-    author_name = normalize_text(author_name)
-    if author_name is None:
+def get_or_create_institution(institution_name):
+    institution_name = normalize_meaningful_text(institution_name)
+    if institution_name is None:
         return None
 
-    if author_name in author_cache:
-        return author_cache[author_name]
+    if institution_name in institution_cache:
+        return institution_cache[institution_name]
 
     cursor.execute(
         """
-        INSERT IGNORE INTO authors (author_name, agency_id, author_country)
-        VALUES (%s, %s, %s)
+        INSERT IGNORE INTO institutions (institution_name)
+        VALUES (%s)
         """,
-        (author_name, agency_id, author_country),
+        (institution_name,),
     )
     cursor.execute(
-        "SELECT author_id FROM authors WHERE author_name = %s",
-        (author_name,),
+        "SELECT institution_id FROM institutions WHERE institution_name = %s",
+        (institution_name,),
     )
-    author_id = cursor.fetchone()[0]
-    author_cache[author_name] = author_id
-    return author_id
+    institution_id = cursor.fetchone()[0]
+    institution_cache[institution_name] = institution_id
+    return institution_id
 
 
 def get_or_create_continent(continent_name):
@@ -141,40 +125,20 @@ def get_or_create_continent(continent_name):
     return continent_id
 
 
-def get_or_create_country(country_name, continent_id, fcv_status, income_level):
+def get_or_create_country(country_name):
     country_name = normalize_text(country_name)
     if country_name is None:
         return None
 
-    fcv_status = normalize_text(fcv_status)
-    income_level = normalize_text(income_level)
-
     if country_name in country_cache:
-        country_id = country_cache[country_name] # sometimes fcv and inco
-        cursor.execute(
-            """
-            UPDATE countries
-            SET
-                continent_id = COALESCE(continent_id, %s),
-                fcv_status = COALESCE(fcv_status, %s),
-                income_level = COALESCE(income_level, %s)
-            WHERE country_id = %s
-            """,
-            (continent_id, fcv_status, income_level, country_id),
-        )
-        return country_id
+        return country_cache[country_name]
 
     cursor.execute(
         """
-        INSERT IGNORE INTO countries (
-            country_name,
-            continent_id,
-            fcv_status,
-            income_level
-        )
-        VALUES (%s, %s, %s, %s)
+        INSERT IGNORE INTO countries (country_name)
+        VALUES (%s)
         """,
-        (country_name, continent_id, fcv_status, income_level),
+        (country_name,),
     )
     cursor.execute(
         "SELECT country_id FROM countries WHERE country_name = %s",
@@ -238,32 +202,57 @@ for paper in all_data:
         ),
     )
 
-    for position, author in enumerate(paper.get("authors") or [], start=1):
+    for author_position, author in enumerate(paper.get("authors") or [], start=1):
         author_name = normalize_text(author.get("author"))
         if author_name is None:
             continue
 
-        agency_id = get_or_create_agency(first_meaningful_affiliation(author))
-        author_country = first_author_country(author)
-        author_id = get_or_create_author(
-            author_name,
-            agency_id,
-            author_country,
-        )
-
         cursor.execute(
             """
-            INSERT IGNORE INTO paperauthors (
+            INSERT INTO paperauthors (
                 paper_id,
                 author_position,
-                author_id
+                author_name
             )
             VALUES (%s, %s, %s)
             """,
-            (paper_id, position, author_id),
+            (paper_id, author_position, author_name),
         )
-    if paper.get("language", []) is not None:
-        for language in paper.get("language", []):
+        paper_author_id = cursor.lastrowid
+
+        institution_position = 0
+        for institution in author.get("institutions") or []:
+            institution_id = get_or_create_institution(
+                institution.get("author_affiliation")
+            )
+            author_country = normalize_meaningful_text(
+                institution.get("author_country")
+            )
+
+            if institution_id is None and author_country is None:
+                continue
+
+            institution_position += 1
+            cursor.execute(
+                """
+                INSERT INTO paperauthorinstitutions (
+                    paper_author_id,
+                    institution_position,
+                    institution_id,
+                    author_country
+                )
+                VALUES (%s, %s, %s, %s)
+                """,
+                (
+                    paper_author_id,
+                    institution_position,
+                    institution_id,
+                    author_country,
+                ),
+            )
+
+    if paper.get("language") is not None:
+        for language in paper.get("language") or []:
             language_id = get_or_create_language(language)
             if language_id is None:
                 continue
@@ -276,36 +265,54 @@ for paper in all_data:
                 (paper_id, language_id),
             )
 
+    continent_position = 0
     for continent_entry in paper.get("continent") or []:
-        continent_name = normalize_text(continent_entry.get("continent"))
-        if continent_name is None:
+        continent_id = get_or_create_continent(continent_entry.get("continent"))
+        if continent_id is None:
             continue
 
-        continent_id = get_or_create_continent(continent_name)
+        continent_position += 1
         cursor.execute(
             """
-            INSERT IGNORE INTO papercontinents (paper_id, continent_id)
-            VALUES (%s, %s)
-            """,
-            (paper_id, continent_id),
-        )
-
-        for country in continent_entry.get("countries") or []:
-            country_id = get_or_create_country(
-                country.get("country"),
-                continent_id,
-                country.get("fcv_status"),
-                country.get("income_level"),
+            INSERT INTO papercontinents (
+                paper_id,
+                continent_position,
+                continent_id
             )
+            VALUES (%s, %s, %s)
+            """,
+            (paper_id, continent_position, continent_id),
+        )
+        paper_continent_id = cursor.lastrowid
+
+        country_position = 0
+        for country in continent_entry.get("countries") or []:
+            country_id = get_or_create_country(country.get("country"))
+            fcv_status = normalize_text(country.get("fcv_status"))
+            income_level = normalize_text(country.get("income_level"))
+
             if country_id is None:
                 continue
 
+            country_position += 1
             cursor.execute(
                 """
-                INSERT IGNORE INTO papercountries (paper_id, country_id)
-                VALUES (%s, %s)
+                INSERT INTO papercountries (
+                    paper_continent_id,
+                    country_position,
+                    country_id,
+                    fcv_status,
+                    income_level
+                )
+                VALUES (%s, %s, %s, %s, %s)
                 """,
-                (paper_id, country_id),
+                (
+                    paper_continent_id,
+                    country_position,
+                    country_id,
+                    fcv_status,
+                    income_level,
+                ),
             )
 
     inserted_research_funder = False
