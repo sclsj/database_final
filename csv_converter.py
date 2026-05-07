@@ -9,6 +9,9 @@ import mysql.connector
 
 OUTPUT_DIR = "./output"
 DEFAULT_STUDY_TYPES = ["ier", "srr", "egm"]
+DEFAULT_AUTHOR_COUNTRY_SOURCE = "institution"
+DEFAULT_LIST_SEPARATOR = "|"
+DEFAULT_WITHIN_AUTHOR_SEPARATOR = ";"
 DEFAULT_COLUMNS = [
     "record_id",
     "product_type",
@@ -124,6 +127,158 @@ def join_values(values, separator):
 def build_in_clause(values):
     placeholders = ", ".join(["%s"] * len(values))
     return f"({placeholders})"
+
+
+def is_default_export_mode(
+    columns,
+    author_country_source,
+    list_separator,
+    within_author_separator,
+):
+    return (
+        columns == DEFAULT_COLUMNS
+        and author_country_source == DEFAULT_AUTHOR_COUNTRY_SOURCE
+        and list_separator == DEFAULT_LIST_SEPARATOR
+        and within_author_separator == DEFAULT_WITHIN_AUTHOR_SEPARATOR
+    )
+
+
+def fetch_default_export_rows(
+    cursor,
+    study_types,
+    list_separator,
+    within_author_separator,
+):
+    query = f"""
+        SELECT
+            r.record_id,
+            r.product_type,
+            r.title,
+            r.year_of_publication,
+            r.sector_name,
+            r.abstract,
+            r.evaluation_design,
+            r.evaluation_method,
+            COALESCE(a.authors, '') AS authors,
+            COALESCE(a.author_institutions, '') AS author_institutions,
+            COALESCE(a.author_countries, '') AS author_countries,
+            COALESCE(g.record_countries, '') AS record_countries,
+            COALESCE(g.record_continents, '') AS record_continents,
+            COALESCE(l.languages, '') AS languages,
+            COALESCE(f.research_funding_agencies, '') AS research_funding_agencies
+        FROM records r
+        LEFT JOIN (
+            SELECT
+                ra.record_id,
+                GROUP_CONCAT(
+                    ra.author_name
+                    ORDER BY ra.author_position
+                    SEPARATOR %s
+                ) AS authors,
+                GROUP_CONCAT(
+                    COALESCE(ai.author_institutions, '')
+                    ORDER BY ra.author_position
+                    SEPARATOR %s
+                ) AS author_institutions,
+                GROUP_CONCAT(
+                    COALESCE(ai.author_countries, '')
+                    ORDER BY ra.author_position
+                    SEPARATOR %s
+                ) AS author_countries
+            FROM recordauthors ra
+            LEFT JOIN (
+                SELECT
+                    rai.record_author_id,
+                    GROUP_CONCAT(
+                        DISTINCT i.institution_name
+                        ORDER BY rai.institution_position
+                        SEPARATOR %s
+                    ) AS author_institutions,
+                    GROUP_CONCAT(
+                        DISTINCT rai.institution_country
+                        ORDER BY rai.institution_position
+                        SEPARATOR %s
+                    ) AS author_countries
+                FROM recordauthorinstitutions rai
+                LEFT JOIN institutions i
+                  ON i.institution_id = rai.institution_id
+                GROUP BY rai.record_author_id
+            ) ai
+              ON ai.record_author_id = ra.record_author_id
+            GROUP BY ra.record_id
+        ) a
+          ON a.record_id = r.record_id
+        LEFT JOIN (
+            SELECT
+                rc.record_id,
+                GROUP_CONCAT(
+                    DISTINCT c.continent_name
+                    ORDER BY rc.record_continent_position
+                    SEPARATOR %s
+                ) AS record_continents,
+                GROUP_CONCAT(
+                    DISTINCT co.country_name
+                    ORDER BY rc.record_continent_position, rco.record_country_position
+                    SEPARATOR %s
+                ) AS record_countries
+            FROM recordcontinents rc
+            JOIN continents c
+              ON c.continent_id = rc.continent_id
+            LEFT JOIN recordcountries rco
+              ON rco.record_continent_id = rc.record_continent_id
+            LEFT JOIN countries co
+              ON co.country_id = rco.country_id
+            GROUP BY rc.record_id
+        ) g
+          ON g.record_id = r.record_id
+        LEFT JOIN (
+            SELECT
+                rl.record_id,
+                GROUP_CONCAT(
+                    DISTINCT l.language_name
+                    ORDER BY l.language_name
+                    SEPARATOR %s
+                ) AS languages
+            FROM recordlanguages rl
+            JOIN languages l
+              ON l.language_id = rl.language_id
+            GROUP BY rl.record_id
+        ) l
+          ON l.record_id = r.record_id
+        LEFT JOIN (
+            SELECT
+                rrfa.record_id,
+                GROUP_CONCAT(
+                    DISTINCT a.agency_name
+                    ORDER BY a.agency_name
+                    SEPARATOR %s
+                ) AS research_funding_agencies
+            FROM recordresearchfundingagencies rrfa
+            JOIN agencies a
+              ON a.agency_id = rrfa.agency_id
+            GROUP BY rrfa.record_id
+        ) f
+          ON f.record_id = r.record_id
+        WHERE r.product_type IN {build_in_clause(study_types)}
+        ORDER BY r.record_id
+    """
+    params = [
+        list_separator,
+        list_separator,
+        list_separator,
+        within_author_separator,
+        within_author_separator,
+        list_separator,
+        list_separator,
+        list_separator,
+        list_separator,
+        *study_types,
+    ]
+    cursor.execute(query, params)
+    return [
+        dict(zip(DEFAULT_COLUMNS, row))
+        for row in cursor.fetchall()
+    ]
 
 
 def fetch_records(cursor, study_types):
@@ -475,24 +630,37 @@ def main():
     )
     cursor = connection.cursor()
 
-    record_rows = fetch_records(cursor, study_types)
-    author_rows = fetch_author_rows(cursor, study_types)
-    continent_rows = fetch_continent_rows(cursor, study_types)
-    country_rows = fetch_country_rows(cursor, study_types)
-    language_rows = fetch_language_rows(cursor, study_types)
-    funder_rows = fetch_funder_rows(cursor, study_types)
-
-    rows = build_export_rows(
-        record_rows=record_rows,
-        author_rows=author_rows,
-        continent_rows=continent_rows,
-        country_rows=country_rows,
-        language_rows=language_rows,
-        funder_rows=funder_rows,
+    if is_default_export_mode(
+        columns=columns,
         author_country_source=args.author_country_source,
         list_separator=args.list_separator,
         within_author_separator=args.within_author_separator,
-    )
+    ):
+        rows = fetch_default_export_rows(
+            cursor=cursor,
+            study_types=study_types,
+            list_separator=args.list_separator,
+            within_author_separator=args.within_author_separator,
+        )
+    else:
+        record_rows = fetch_records(cursor, study_types)
+        author_rows = fetch_author_rows(cursor, study_types)
+        continent_rows = fetch_continent_rows(cursor, study_types)
+        country_rows = fetch_country_rows(cursor, study_types)
+        language_rows = fetch_language_rows(cursor, study_types)
+        funder_rows = fetch_funder_rows(cursor, study_types)
+
+        rows = build_export_rows(
+            record_rows=record_rows,
+            author_rows=author_rows,
+            continent_rows=continent_rows,
+            country_rows=country_rows,
+            language_rows=language_rows,
+            funder_rows=funder_rows,
+            author_country_source=args.author_country_source,
+            list_separator=args.list_separator,
+            within_author_separator=args.within_author_separator,
+        )
 
     write_csv(rows, columns, args.output_prefix)
 
