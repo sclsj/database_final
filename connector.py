@@ -173,13 +173,13 @@ def get_or_create_language(language_name):
     return language_id
 
 
-for paper in all_data:
-    paper_id = paper.get("id")
+for record in all_data:
+    record_id = record.get("id")
 
     cursor.execute(
         """
-        INSERT IGNORE INTO papers (
-            paper_id,
+        INSERT IGNORE INTO records (
+            record_id,
             product_type,
             title,
             year_of_publication,
@@ -191,101 +191,101 @@ for paper in all_data:
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """,
         (
-            paper_id,
-            paper.get("product_type"),
-            paper.get("title"),
-            paper.get("year_of_publication"),
-            paper.get("sector_name"),
-            paper.get("abstract"),
-            paper.get("evaluation_design"),
-            paper.get("evaluation_method"),
+            record_id,
+            record.get("product_type"),
+            record.get("title"),
+            record.get("year_of_publication"),
+            record.get("sector_name"),
+            record.get("abstract"),
+            record.get("evaluation_design"),
+            record.get("evaluation_method"),
         ),
     )
 
-    for author_position, author in enumerate(paper.get("authors") or [], start=1):
+    for author_position, author in enumerate(record.get("authors") or [], start=1):
         author_name = normalize_text(author.get("author"))
         if author_name is None:
             continue
 
         cursor.execute(
             """
-            INSERT INTO paperauthors (
-                paper_id,
+            INSERT INTO recordauthors (
+                record_id,
                 author_position,
                 author_name
             )
             VALUES (%s, %s, %s)
             """,
-            (paper_id, author_position, author_name),
+            (record_id, author_position, author_name),
         )
-        paper_author_id = cursor.lastrowid
+        record_author_id = cursor.lastrowid
 
         institution_position = 0
         for institution in author.get("institutions") or []:
             institution_id = get_or_create_institution(
                 institution.get("author_affiliation")
             )
-            author_country = normalize_meaningful_text(
+            institution_country = normalize_meaningful_text(
                 institution.get("author_country")
             )
 
-            if institution_id is None and author_country is None:
+            if institution_id is None and institution_country is None:
                 continue
 
             institution_position += 1
             cursor.execute(
                 """
-                INSERT INTO paperauthorinstitutions (
-                    paper_author_id,
+                INSERT INTO recordauthorinstitutions (
+                    record_author_id,
                     institution_position,
                     institution_id,
-                    author_country
+                    institution_country
                 )
                 VALUES (%s, %s, %s, %s)
                 """,
                 (
-                    paper_author_id,
+                    record_author_id,
                     institution_position,
                     institution_id,
-                    author_country,
+                    institution_country,
                 ),
             )
 
-    if paper.get("language") is not None:
-        for language in paper.get("language") or []:
+    if record.get("language") is not None:
+        for language in record.get("language") or []:
             language_id = get_or_create_language(language)
             if language_id is None:
                 continue
 
             cursor.execute(
                 """
-                INSERT IGNORE INTO paperlanguages (paper_id, language_id)
+                INSERT IGNORE INTO recordlanguages (record_id, language_id)
                 VALUES (%s, %s)
                 """,
-                (paper_id, language_id),
+                (record_id, language_id),
             )
 
-    continent_position = 0
-    for continent_entry in paper.get("continent") or []:
+    record_continent_position = 0
+    for continent_entry in record.get("continent") or []:
         continent_id = get_or_create_continent(continent_entry.get("continent"))
         if continent_id is None:
             continue
 
-        continent_position += 1
+        record_continent_position += 1
         cursor.execute(
             """
-            INSERT INTO papercontinents (
-                paper_id,
-                continent_position,
+            INSERT INTO recordcontinents (
+                record_id,
+                record_continent_position,
                 continent_id
             )
             VALUES (%s, %s, %s)
             """,
-            (paper_id, continent_position, continent_id),
+            (record_id, record_continent_position, continent_id),
         )
-        paper_continent_id = cursor.lastrowid
+        record_continent_id = cursor.lastrowid
 
-        country_position = 0
+        record_country_position = 0
         for country in continent_entry.get("countries") or []:
             country_id = get_or_create_country(country.get("country"))
             fcv_status = normalize_text(country.get("fcv_status"))
@@ -294,12 +294,12 @@ for paper in all_data:
             if country_id is None:
                 continue
 
-            country_position += 1
+            record_country_position += 1
             cursor.execute(
                 """
-                INSERT INTO papercountries (
-                    paper_continent_id,
-                    country_position,
+                INSERT INTO recordcountries (
+                    record_continent_id,
+                    record_country_position,
                     country_id,
                     fcv_status,
                     income_level
@@ -307,8 +307,8 @@ for paper in all_data:
                 VALUES (%s, %s, %s, %s, %s)
                 """,
                 (
-                    paper_continent_id,
-                    country_position,
+                    record_continent_id,
+                    record_country_position,
                     country_id,
                     fcv_status,
                     income_level,
@@ -316,7 +316,7 @@ for paper in all_data:
             )
 
     inserted_research_funder = False
-    for project in paper.get("project_name") or []:
+    for project in record.get("project_name") or []:
         for agency in project.get("research_funding_agencies") or []:
             agency_id = get_or_create_agency(agency.get("agency_name"))
             if agency_id is None:
@@ -325,30 +325,30 @@ for paper in all_data:
             inserted_research_funder = True
             cursor.execute(
                 """
-                INSERT IGNORE INTO paperresearchfundingagencies (
-                    paper_id,
+                INSERT IGNORE INTO recordresearchfundingagencies (
+                    record_id,
                     agency_id
                 )
                 VALUES (%s, %s)
                 """,
-                (paper_id, agency_id),
+                (record_id, agency_id),
             )
 
     if not inserted_research_funder:
-        for agency in paper.get("research_funding_agency", []):
+        for agency in record.get("research_funding_agency", []):
             agency_id = get_or_create_agency(agency.get("agency_name"))
             if agency_id is None:
                 continue
 
             cursor.execute(
                 """
-                INSERT IGNORE INTO paperresearchfundingagencies (
-                    paper_id,
+                INSERT IGNORE INTO recordresearchfundingagencies (
+                    record_id,
                     agency_id
                 )
                 VALUES (%s, %s)
                 """,
-                (paper_id, agency_id),
+                (record_id, agency_id),
             )
 
 connection.commit()
