@@ -275,10 +275,16 @@ def fetch_default_export_rows(
         *study_types,
     ]
     cursor.execute(query, params)
-    return [
-        dict(zip(DEFAULT_COLUMNS, row))
-        for row in cursor.fetchall()
-    ]
+    rows = []
+    expected_column_count = len(DEFAULT_COLUMNS)
+    for row in cursor.fetchall():
+        if len(row) != expected_column_count:
+            raise ValueError(
+                "Unexpected default export column count: "
+                f"expected {expected_column_count}, got {len(row)}"
+            )
+        rows.append(dict(zip(DEFAULT_COLUMNS, row)))
+    return rows
 
 
 def fetch_records(cursor, study_types):

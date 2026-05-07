@@ -75,6 +75,18 @@ class CsvConverterDefaultQueryTests(unittest.TestCase):
         self.assertEqual(rows[0]["authors"], "Author One|Author Two")
         self.assertEqual(rows[0]["research_funding_agencies"], "Agency 1")
 
+    def test_fetch_default_export_rows_raises_on_unexpected_shape(self):
+        cursor = Mock()
+        cursor.fetchall.return_value = [(1, "ier")]
+
+        with self.assertRaises(ValueError):
+            csv_converter.fetch_default_export_rows(
+                cursor=cursor,
+                study_types=["ier"],
+                list_separator="|",
+                within_author_separator=";",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
