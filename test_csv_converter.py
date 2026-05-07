@@ -67,9 +67,22 @@ class CsvConverterDefaultQueryTests(unittest.TestCase):
         query, params = cursor.execute.call_args[0]
         self.assertIn("FROM records r", query)
         self.assertIn("LEFT JOIN (", query)
+        expected_params = [
+            "|",
+            "|",
+            "|",
+            ";",
+            ";",
+            "|",
+            "|",
+            "|",
+            "|",
+            "ier",
+            "srr",
+        ]
         self.assertEqual(
             params,
-            ["|", "|", "|", ";", ";", "|", "|", "|", "|", "ier", "srr"],
+            expected_params,
         )
         self.assertEqual(rows[0]["record_id"], 101)
         self.assertEqual(rows[0]["authors"], "Author One|Author Two")
