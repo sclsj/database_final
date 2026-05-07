@@ -149,7 +149,8 @@ def fetch_default_export_rows(
     list_separator,
     within_author_separator,
 ):
-    query = f"""
+    study_types_clause = build_in_clause(study_types)
+    query = """
         SELECT
             r.record_id,
             r.product_type,
@@ -259,7 +260,8 @@ def fetch_default_export_rows(
             GROUP BY rrfa.record_id
         ) f
           ON f.record_id = r.record_id
-        WHERE r.product_type IN {build_in_clause(study_types)}
+        WHERE r.product_type IN """
+    query += study_types_clause + """
         ORDER BY r.record_id
     """
     params = [

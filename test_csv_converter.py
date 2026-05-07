@@ -22,6 +22,16 @@ class CsvConverterDefaultModeTests(unittest.TestCase):
             )
         )
 
+    def test_is_default_export_mode_true_for_default_columns_constant(self):
+        self.assertTrue(
+            csv_converter.is_default_export_mode(
+                columns=csv_converter.DEFAULT_COLUMNS,
+                author_country_source=csv_converter.DEFAULT_AUTHOR_COUNTRY_SOURCE,
+                list_separator=csv_converter.DEFAULT_LIST_SEPARATOR,
+                within_author_separator=csv_converter.DEFAULT_WITHIN_AUTHOR_SEPARATOR,
+            )
+        )
+
     def test_is_default_export_mode_false_when_options_change(self):
         self.assertFalse(
             csv_converter.is_default_export_mode(
