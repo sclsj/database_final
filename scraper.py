@@ -38,6 +38,10 @@ def search(product_type, start = 0, size = 200):
         research_funding_agency
       }
     }
+    research_funding_agency {
+        agency_name
+        research_funding_agency
+    }
      continent{
       continent
       countries {
