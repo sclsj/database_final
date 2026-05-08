@@ -1,3 +1,11 @@
+"""Load scraped 3ie records from JSON into the normalized MySQL schema.
+
+This script rebuilds the project schema from ``schema.sql`` and then imports
+``data_output.json`` into the relational tables used by the project. The
+source JSON contains placeholder text and a few inconsistent field shapes, so
+the loader normalizes text and uses defensive iteration where needed.
+"""
+
 import json
 
 import mysql.connector
@@ -18,6 +26,7 @@ PLACEHOLDER_VALUES = {
 
 
 def clean_text(value):
+    """Collapse whitespace and convert empty values to ``None``."""
     if value is None:
         return None
 
@@ -26,6 +35,7 @@ def clean_text(value):
 
 
 def clean_and_remove_placeholder(value):
+    """Normalize text and treat known placeholder strings as missing data."""
     cleaned = clean_text(value)
     if cleaned is None:
         return None
@@ -40,6 +50,7 @@ with open("data_output.json") as f:
 connection = mysql.connector.connect(host="localhost", user="root")
 cursor = connection.cursor()
 
+# Rebuild the schema on each run so the load starts from a known clean state.
 with open("schema.sql", "r") as f:
     for statement in f.read().split(";"):
         statement = statement.strip()
@@ -59,6 +70,7 @@ cursor = connection.cursor()
 
 
 def get_agency_id(agency_name):
+    """Return an agency ID, inserting the agency row if needed."""
     agency_name = clean_and_remove_placeholder(agency_name)
     if agency_name is None:
         return None
@@ -78,6 +90,7 @@ def get_agency_id(agency_name):
 
 
 def get_institution_id(institution_name):
+    """Return an institution ID, inserting the institution row if needed."""
     institution_name = clean_and_remove_placeholder(institution_name)
     if institution_name is None:
         return None
@@ -97,6 +110,7 @@ def get_institution_id(institution_name):
 
 
 def get_continent_id(continent_name):
+    """Return a continent ID, inserting the continent row if needed."""
     continent_name = clean_text(continent_name)
     if continent_name is None:
         return None
@@ -116,6 +130,7 @@ def get_continent_id(continent_name):
 
 
 def get_country_id(country_name):
+    """Return a country ID, inserting the country row if needed."""
     country_name = clean_text(country_name)
     if country_name is None:
         return None
@@ -135,6 +150,7 @@ def get_country_id(country_name):
 
 
 def get_language_id(language_name):
+    """Return a language ID, inserting the language row if needed."""
     language_name = clean_and_remove_placeholder(language_name)
     if language_name is None:
         return None
@@ -182,7 +198,8 @@ for record in all_data:
         )
     )
 
-    for author_position, author in enumerate(record.get("authors"), start=1): # we use 1-based indexing!
+    # Store explicit positions so exports can preserve source ordering.
+    for author_position, author in enumerate(record.get("authors"), start=1):
         author_name = clean_text(author.get("author"))
         if author_name is None:
             continue
@@ -209,6 +226,7 @@ for record in all_data:
                 institution.get("author_country")
             )
 
+            # Some source rows have a country but no institution name.
             if institution_id is None and institution_country is None:
                 continue
 
