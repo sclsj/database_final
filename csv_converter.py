@@ -237,14 +237,14 @@ def main():
     connection = mysql.connector.connect(
         user="root",
         host="localhost",
-        database="final_project",
+        database="final_project"
     )
     cursor = connection.cursor()
 
     # needed because group concat is limited to 1024 by default and truncating strings.
     cursor.execute(
         "SET SESSION group_concat_max_len = %s",
-        (1024 * 1024,),
+        (1024 * 1024,)
     )
 
     rows = fetch_all_rows(cursor, study_types, list_separator, within_author_separator)
