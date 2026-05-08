@@ -240,7 +240,7 @@ def main():
         database="final_project",
     )
     cursor = connection.cursor()
-    
+
     # needed because group concat is limited to 1024 by default and truncating strings.
     cursor.execute(
         "SET SESSION group_concat_max_len = %s",

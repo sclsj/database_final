@@ -46,20 +46,11 @@ connection = mysql.connector.connect(
 )
 cursor = connection.cursor()
 
-agency_cache = {}
-institution_cache = {}
-continent_cache = {}
-country_cache = {}
-language_cache = {}
-
 
 def get_or_create_agency(agency_name):
     agency_name = normalize_meaningful_text(agency_name)
     if agency_name is None:
         return None
-
-    if agency_name in agency_cache:
-        return agency_cache[agency_name]
 
     cursor.execute(
         """
@@ -72,18 +63,13 @@ def get_or_create_agency(agency_name):
         "SELECT agency_id FROM agencies WHERE agency_name = %s",
         (agency_name,),
     )
-    agency_id = cursor.fetchone()[0]
-    agency_cache[agency_name] = agency_id
-    return agency_id
+    return cursor.fetchone()[0]
 
 
 def get_or_create_institution(institution_name):
     institution_name = normalize_meaningful_text(institution_name)
     if institution_name is None:
         return None
-
-    if institution_name in institution_cache:
-        return institution_cache[institution_name]
 
     cursor.execute(
         """
@@ -96,18 +82,13 @@ def get_or_create_institution(institution_name):
         "SELECT institution_id FROM institutions WHERE institution_name = %s",
         (institution_name,),
     )
-    institution_id = cursor.fetchone()[0]
-    institution_cache[institution_name] = institution_id
-    return institution_id
+    return cursor.fetchone()[0]
 
 
 def get_or_create_continent(continent_name):
     continent_name = normalize_text(continent_name)
     if continent_name is None:
         return None
-
-    if continent_name in continent_cache:
-        return continent_cache[continent_name]
 
     cursor.execute(
         """
@@ -120,18 +101,13 @@ def get_or_create_continent(continent_name):
         "SELECT continent_id FROM continents WHERE continent_name = %s",
         (continent_name,),
     )
-    continent_id = cursor.fetchone()[0]
-    continent_cache[continent_name] = continent_id
-    return continent_id
+    return cursor.fetchone()[0]
 
 
 def get_or_create_country(country_name):
     country_name = normalize_text(country_name)
     if country_name is None:
         return None
-
-    if country_name in country_cache:
-        return country_cache[country_name]
 
     cursor.execute(
         """
@@ -144,18 +120,13 @@ def get_or_create_country(country_name):
         "SELECT country_id FROM countries WHERE country_name = %s",
         (country_name,),
     )
-    country_id = cursor.fetchone()[0]
-    country_cache[country_name] = country_id
-    return country_id
+    return cursor.fetchone()[0]
 
 
 def get_or_create_language(language_name):
     language_name = normalize_meaningful_text(language_name)
     if language_name is None:
         return None
-
-    if language_name in language_cache:
-        return language_cache[language_name]
 
     cursor.execute(
         """
@@ -168,9 +139,7 @@ def get_or_create_language(language_name):
         "SELECT language_id FROM languages WHERE language_name = %s",
         (language_name,),
     )
-    language_id = cursor.fetchone()[0]
-    language_cache[language_name] = language_id
-    return language_id
+    return cursor.fetchone()[0]
 
 
 for record in all_data:
