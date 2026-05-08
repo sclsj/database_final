@@ -41,6 +41,7 @@ DEFAULT_COLUMNS = [
     "record_continents",
     "languages",
     "research_funding_agencies",
+    "research_funding_agency_countries",
 ]
 
 def ask_study_type():
@@ -90,7 +91,8 @@ def fetch_all_rows(cursor, study_types, list_separator, within_author_separator)
             COALESCE(g.record_countries, '') AS record_countries,
             COALESCE(g.record_continents, '') AS record_continents,
             COALESCE(l.languages, '') AS languages,
-            COALESCE(f.research_funding_agencies, '') AS research_funding_agencies
+            COALESCE(f.research_funding_agencies, '') AS research_funding_agencies,
+            COALESCE(f.research_funding_agency_countries, '') AS research_funding_agency_countries
         FROM records r
         
         LEFT JOIN (
@@ -172,10 +174,15 @@ def fetch_all_rows(cursor, study_types, list_separator, within_author_separator)
             SELECT
                 rrfa.record_id,
                 GROUP_CONCAT(
-                    DISTINCT a.agency_name
+                    a.agency_name
                     ORDER BY a.agency_name
                     SEPARATOR %s
-                ) AS research_funding_agencies
+                ) AS research_funding_agencies,
+                GROUP_CONCAT(
+                    COALESCE(a.country, '')
+                    ORDER BY a.agency_name
+                    SEPARATOR %s
+                ) AS research_funding_agency_countries
             FROM recordresearchfundingagencies rrfa
             JOIN agencies a
               ON a.agency_id = rrfa.agency_id
@@ -193,6 +200,7 @@ def fetch_all_rows(cursor, study_types, list_separator, within_author_separator)
         list_separator,
         within_author_separator,
         within_author_separator,
+        list_separator,
         list_separator,
         list_separator,
         list_separator,
