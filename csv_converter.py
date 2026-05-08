@@ -638,6 +638,12 @@ def main():
     )
     cursor = connection.cursor()
 
+    # needed because group concat is limited to 1024 by default and truncating strings.
+    cursor.execute(
+        "SET SESSION group_concat_max_len = %s",
+        (1024 * 1024,),
+    )
+
     if is_default_export_mode(
         columns=columns,
         author_country_source=args.author_country_source,
